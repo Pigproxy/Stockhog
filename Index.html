@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>StockHog 🐷</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0b0e;
+  --s1: #131318;
+  --s2: #1a1a22;
+  --s3: #222230;
+  --border: #28283a;
+  --border2: #32324a;
+  --accent: #ff6b35;
+  --adim: rgba(255,107,53,0.12);
+  --gold: #ffd166;
+  --gdim: rgba(255,209,102,0.1);
+  --blue: #5bc8fa;
+  --bdim: rgba(91,200,250,0.1);
+  --green: #6ee7b7;
+  --grdim: rgba(110,231,183,0.1);
+  --red: #ff6b6b;
+  --rdim: rgba(255,107,107,0.1);
+  --text: #eeeef5;
+  --t2: #9999bb;
+  --t3: #55556a;
+  --fd: 'Syne', sans-serif;
+  --fm: 'DM Mono', monospace;
+  --r: 14px;
+  --r2: 10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--fm);height:100%;overflow:hidden;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);}
+
+/* Topbar */
+.topbar{flex-shrink:0;background:rgba(11,11,14,0.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(–border);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:200;}
+.logo{font-family:var(–fd);font-weight:800;font-size:1.25rem;letter-spacing:-0.04em;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.logo .hog{color:var(–accent);}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.live-pill{display:none;align-items:center;gap:6px;background:var(–adim);border:1px solid rgba(255,107,53,0.3);border-radius:20px;padding:5px 10px;font-size:0.62rem;color:var(–accent);text-transform:uppercase;letter-spacing:0.08em;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(–accent);animation:blink 1s infinite;}
+.scan-btn{background:none;border:1px solid var(–border2);border-radius:8px;padding:7px 10px;color:var(–t2);font-family:var(–fm);font-size:0.7rem;cursor:pointer;transition:all .15s;display:none;}
+.scan-btn:active{background:var(–s2);}
+
+/* Scroll */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px 14px 90px;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* Tabbar */
+.tabbar{flex-shrink:0;background:rgba(11,11,14,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(–border);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:200;}
+.tb{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(–t3);font-family:var(–fm);font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;transition:color .15s;position:relative;}
+.tb .ti{font-size:1.25rem;line-height:1;transition:transform .15s;}
+.tb.on{color:var(–accent);}
+.tb.on .ti{transform:scale(1.15);}
+.notif{position:absolute;top:8px;right:calc(50% - 14px);width:8px;height:8px;border-radius:50%;background:var(–red);border:2px solid var(–bg);display:none;}
+
+/* Pages */
+.page{display:none;}
+.page.on{display:block;}
+
+/* Section label */
+.sl{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.14em;color:var(–t3);margin:20px 0 8px 2px;display:flex;align-items:center;gap:8px;}
+.sl::after{content:’’;flex:1;height:1px;background:var(–border);}
+.sl:first-child{margin-top:4px;}
+
+/* Card */
+.card{background:var(–s1);border:1px solid var(–border);border-radius:var(–r);overflow:hidden;margin-bottom:10px;}
+.cp{padding:14px;}
+
+/* Field */
+.field{margin-bottom:12px;}
+.field:last-child{margin-bottom:0;}
+.field label{display:flex;align-items:center;justify-content:space-between;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(–t3);margin-bottom:6px;}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(–green);display:none;}
+.sdot.on{display:block;}
+input[type=text],input[type=password]{width:100%;background:var(–s2);border:1px solid var(–border);border-radius:var(–r2);color:var(–text);font-family:var(–fm);font-size:0.88rem;padding:12px 14px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
+input:focus{border-color:var(–accent);box-shadow:0 0 0 3px var(–adim);}
+input::placeholder{color:var(–t3);}
+
+/* Store grid */
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.chip{border:1px solid var(–border);border-radius:var(–r2);padding:10px 6px 9px;font-size:0.65rem;cursor:pointer;text-align:center;background:var(–s2);color:var(–t3);transition:all .12s;user-select:none;line-height:1.35;}
+.chip .ci{font-size:1.15rem;display:block;margin-bottom:3px;}
+.chip.on{border-color:var(–accent);color:var(–accent);background:var(–adim);}
+
+/* Interval */
+.ivrow{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;}
+.ivrow::-webkit-scrollbar{display:none;}
+.ivb{flex-shrink:0;padding:8px 15px;font-family:var(–fm);font-size:0.72rem;border:1px solid var(–border);border-radius:20px;background:var(–s2);color:var(–t3);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.ivb.on{border-color:var(–gold);color:var(–gold);background:var(–gdim);}
+
+/* Buttons */
+.btn-main{width:100%;padding:15px;background:var(–accent);color:#fff;border:none;border-radius:var(–r);font-family:var(–fd);font-weight:800;font-size:0.95rem;letter-spacing:.02em;cursor:pointer;transition:all .15s;box-shadow:0 4px 24px rgba(255,107,53,.35);margin-top:12px;}
+.btn-main:active{transform:scale(.97);box-shadow:none;}
+.btn-main:disabled{opacity:.25;box-shadow:none;pointer-events:none;}
+.btn-red{width:100%;padding:13px;background:var(–rdim);color:var(–red);border:1px solid rgba(255,107,107,.3);border-radius:var(–r);font-family:var(–fm);font-size:.8rem;cursor:pointer;transition:all .15s;margin-top:8px;display:none;}
+.btn-red:active{background:rgba(255,107,107,.2);}
+.btn-blue{width:100%;padding:12px;background:var(–bdim);color:var(–blue);border:1px solid rgba(91,200,250,.25);border-radius:var(–r);font-family:var(–fm);font-size:.75rem;cursor:pointer;transition:all .15s;margin-top:8px;}
+.btn-blue:active{background:rgba(91,200,250,.18);}
+
+/* Hint */
+.hint{background:linear-gradient(135deg,rgba(255,107,53,.08),rgba(255,107,53,.04));border:1px solid rgba(255,107,53,.2);border-radius:var(–r);padding:14px;font-size:.73rem;line-height:1.8;margin-bottom:10px;}
+.hint h4{font-family:var(–fd);font-size:.75rem;color:var(–accent);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.hint ol{padding-left:16px;color:var(–t2);}
+.hint a{color:var(–blue);text-decoration:none;}
+.hint b{color:var(–gold);}
+
+/* Status */
+.sbar{background:var(–s1);border:1px solid var(–border);border-radius:var(–r);padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:12px;font-size:.75rem;}
+.pulse{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(–t3);}
+.pulse.scanning{background:var(–accent);animation:blink .85s infinite;}
+.pulse.found{background:var(–green);box-shadow:0 0 8px rgba(110,231,183,.5);}
+.pulse.error{background:var(–red);}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.25;transform:scale(1.7);}}
+.st{flex:1;line-height:1.4;color:var(–t2);}
+.cd{font-size:.62rem;color:var(–t3);text-align:right;}
+.cd strong{color:var(–gold);display:block;font-size:.72rem;}
+
+/* Tracked items */
+.ti-card{background:var(–s1);border:1px solid var(–border);border-radius:var(–r);padding:13px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;position:relative;overflow:hidden;}
+.ti-card::before{content:’’;position:absolute;left:0;top:0;bottom:0;width:3px;background:var(–t3);transition:background .3s;}
+.ti-card.live::before{background:var(–accent);}
+.ti-ic{font-size:1.3rem;flex-shrink:0;}
+.ti-inf{flex:1;min-width:0;}
+.ti-nm{font-family:var(–fd);font-weight:700;font-size:.88rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ti-lc{font-size:.65rem;color:var(–t3);}
+.ti-rm{background:none;border:none;color:var(–t3);font-size:1.1rem;cursor:pointer;padding:4px;flex-shrink:0;transition:color .15s;}
+.ti-rm:active{color:var(–red);}
+
+/* Add form */
+.add-box{background:var(–s1);border:1px dashed var(–border2);border-radius:var(–r);padding:14px;margin-bottom:10px;}
+.add-row{display:flex;gap:8px;margin-top:8px;}
+.add-row input{flex:1;}
+.add-row input.loc-in{max-width:130px;}
+.add-go{background:var(–accent);color:#fff;border:none;border-radius:var(–r2);padding:10px 16px;font-family:var(–fd);font-weight:700;font-size:.8rem;cursor:pointer;flex-shrink:0;transition:all .12s;}
+.add-go:active{transform:scale(.95);}
+
+/* Toggle */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;}
+.tog-row:not(:last-child){border-bottom:1px solid var(–border);}
+.tl{font-size:.78rem;color:var(–t2);}
+.ts{font-size:.63rem;color:var(–t3);margin-top:2px;}
+.toggle{width:38px;height:22px;border-radius:11px;background:var(–s3);border:1px solid var(–border2);position:relative;transition:background .2s,border-color .2s;flex-shrink:0;}
+.toggle.on{background:var(–accent);border-color:var(–accent);}
+.toggle::after{content:’’;position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.toggle.on::after{transform:translateX(16px);}
+
+/* Results */
+.rsec-title{font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:var(–t3);margin:14px 0 8px 2px;display:flex;align-items:center;gap:6px;}
+.rsc{background:var(–s3);border-radius:20px;padding:2px 7px;font-size:.6rem;color:var(–t2);}
+.rcard{background:var(–s1);border:1px solid var(–border);border-radius:var(–r);padding:13px 14px;margin-bottom:8px;display:flex;gap:11px;align-items:flex-start;animation:popIn .2s ease both;position:relative;overflow:hidden;}
+.rcard.ins{border-color:rgba(110,231,183,.25);background:linear-gradient(135deg,rgba(110,231,183,.05),var(–s1));}
+.rcard.ins::before{content:’’;position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(–green),transparent);}
+@keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.rdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.rdot.in{background:var(–green);box-shadow:0 0 10px rgba(110,231,183,.6);}
+.rdot.out{background:var(–t3);}
+.rdot.unk{background:var(–blue);opacity:.7;}
+.rb{flex:1;min-width:0;}
+.rn{font-family:var(–fd);font-weight:700;font-size:.88rem;margin-bottom:4px;}
+.rnt{font-size:.68rem;color:var(–t2);line-height:1.6;}
+.rnt a{color:var(–blue);text-decoration:none;}
+.rcf{font-size:.6rem;margin-top:3px;}
+.rbdg{font-size:.58rem;padding:3px 8px;border-radius:20px;font-weight:500;white-space:nowrap;flex-shrink:0;}
+.rbdg.in{background:var(–grdim);color:var(–green);}
+.rbdg.out{background:rgba(85,85,106,.2);color:var(–t3);}
+.rbdg.unk{background:var(–bdim);color:var(–blue);}
+
+/* History */
+.hi{background:var(–s1);border:1px solid var(–border);border-radius:var(–r);padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.hi:active{border-color:var(–border2);}
+.hi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.hi-nm{font-family:var(–fd);font-weight:700;font-size:.85rem;}
+.hi-ts{font-size:.62rem;color:var(–t3);}
+.hi-bot{display:flex;align-items:center;gap:8px;}
+.hi-lc{font-size:.68rem;color:var(–t2);}
+.hi-st{font-size:.65rem;padding:2px 8px;border-radius:20px;margin-left:auto;}
+.hi-st.y{background:var(–grdim);color:var(–green);}
+.hi-st.n{background:rgba(85,85,106,.15);color:var(–t3);}
+
+/* Log */
+.logbox{background:#06060a;border:1px solid var(–border);border-radius:var(–r);padding:12px 13px;font-size:.67rem;color:var(–t3);height:280px;overflow-y:auto;line-height:2;}
+.logbox::-webkit-scrollbar{width:2px;}
+.logbox::-webkit-scrollbar-thumb{background:var(–border);}
+.ll{display:block;}
+.ll.ok{color:var(–green);}
+.ll.err{color:var(–red);}
+.ll.info{color:var(–blue);}
+.ll.warn{color:var(–gold);}
+
+/* Scan meta */
+.smeta{font-size:.63rem;color:var(–t3);text-align:center;margin-bottom:10px;padding:8px;background:var(–s1);border-radius:8px;border:1px solid var(–border);}
+.smeta b{color:var(–green);}
+.smeta .sit{color:var(–gold);}
+
+/* Shimmer */
+.shim{background:linear-gradient(90deg,var(–s1) 25%,var(–s2) 50%,var(–s1) 75%);background-size:200% 100%;animation:shim 1.2s infinite;border-radius:var(–r);height:72px;margin-bottom:8px;}
+@keyframes shim{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* Empty */
+.empty{text-align:center;padding:48px 20px;color:var(–t3);}
+.empty .ei{font-size:2.8rem;display:block;margin-bottom:12px;}
+.empty p{font-size:.78rem;line-height:1.7;max-width:240px;margin:0 auto;}
+.empty p b{color:var(–accent);}
+</style>
+
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span>🐷 Stock</span><span class="hog">Hog</span></div>
+  <div class="topbar-right">
+    <div class="live-pill" id="livePill"><div class="live-dot"></div>Live</div>
+    <button class="scan-btn" id="scanBtn" onclick="scanNow()">↺ Scan</button>
+  </div>
+</div>
+
+<div class="scroll" id="scrollEl">
+
+  <!-- SETUP -->
+
+  <div class="page on" id="page-setup">
+    <div class="sl">API Keys</div>
+    <div class="hint">
+      <h4>🔑 Free Setup — 5 minutes</h4>
+      <ol>
+        <li><b>Groq key</b> → <a href="https://console.groq.com" target="_blank">console.groq.com</a> · Sign up · API Keys</li>
+        <li><b>Telegram bot</b> → message <a href="https://t.me/BotFather" target="_blank">@BotFather</a> → /newbot</li>
+        <li><b>Chat ID</b> → message <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a></li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="cp">
+        <div class="field">
+          <label>Groq API Key <span class="sdot" id="sd0"></span></label>
+          <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off" oninput="sf('groqKey','sd0')">
+        </div>
+        <div class="field">
+          <label>Telegram Bot Token <span class="sdot" id="sd1"></span></label>
+          <input type="password" id="tgToken" placeholder="123456:ABC..." autocomplete="off" oninput="sf('tgToken','sd1')">
+        </div>
+        <div class="field">
+          <label>Telegram Chat ID <span class="sdot" id="sd2"></span></label>
+          <input type="text" id="tgChatId" placeholder="987654321" inputmode="numeric" oninput="sf('tgChatId','sd2')">
+        </div>
+      </div>
+    </div>
+    <button class="btn-blue" onclick="testTG()">📨 Test Telegram Connection</button>
+
+```
+<div class="sl">Items to Hunt</div>
+<div id="tiList"></div>
+<div class="add-box">
+  <div style="font-size:.7rem;color:var(--t2);">Track a new item</div>
+  <div class="add-row">
+    <input type="text" id="newItem" placeholder="What to find...">
+    <input type="text" id="newLoc" class="loc-in" placeholder="City / ZIP">
+    <button class="add-go" onclick="addItem()">＋</button>
+  </div>
+</div>
+
+<div class="sl">Stores</div>
+<div class="sgrid" id="storeGrid"></div>
+
+<div class="sl">Check Every</div>
+<div class="ivrow" id="ivRow"></div>
+
+<div class="sl">Options</div>
+<div class="card">
+  <div class="tog-row" onclick="togOpt('notifyAll')">
+    <div><div class="tl">Re-alert every scan</div><div class="ts">Send Telegram even if already notified</div></div>
+    <div class="toggle" id="tog-notifyAll"></div>
+  </div>
+  <div class="tog-row" onclick="togOpt('skipUnknown')">
+    <div><div class="tl">Hide "Unknown" results</div><div class="ts">Only show in-stock and out-of-stock</div></div>
+    <div class="toggle" id="tog-skipUnknown"></div>
+  </div>
+</div>
+
+<button class="btn-main" id="startBtn" onclick="startTracking()">🐷 Start Hunting</button>
+<button class="btn-red" id="stopBtn" onclick="stopTracking()">■ Stop Tracking</button>
+<div style="height:8px;"></div>
+```
+
+  </div>
+
+  <!-- RESULTS -->
+
+  <div class="page" id="page-results">
+    <div class="sbar" id="sbar" style="display:none;">
+      <div class="pulse" id="pulse"></div>
+      <div class="st" id="stText">Idle</div>
+      <div class="cd" id="cdEl"></div>
+    </div>
+    <div class="smeta" id="sMeta" style="display:none;"></div>
+    <div id="resArea">
+      <div class="empty"><span class="ei">🔍</span><p>Hit <b>Start Hunting</b> in Setup to see live results here.</p></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+
+  <div class="page" id="page-history">
+    <div class="sl">Past Scans</div>
+    <div id="histArea">
+      <div class="empty"><span class="ei">📜</span><p>Scan history will appear here after your first hunt.</p></div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+
+  <div class="page" id="page-log">
+    <div class="sl">Activity Log</div>
+    <div class="logbox" id="logBox"></div>
+    <button class="btn-blue" style="margin-top:8px;font-size:.7rem;padding:10px;" onclick="clearLog()">Clear Log</button>
+  </div>
+
+</div>
+
+<div class="tabbar">
+  <button class="tb on" id="tab-setup" onclick="goTab('setup')"><span class="ti">⚙️</span>Setup</button>
+  <button class="tb" id="tab-results" onclick="goTab('results')"><span class="ti">📦</span>Results<span class="notif" id="n-results"></span></button>
+  <button class="tb" id="tab-history" onclick="goTab('history')"><span class="ti">📜</span>History</button>
+  <button class="tb" id="tab-log" onclick="goTab('log')"><span class="ti">📋</span>Log<span class="notif" id="n-log"></span></button>
+</div>
+
+<script>
+const MODEL = 'llama-3.3-70b-versatile';
+const SK = 'stockhog_v3';
+
+const STORES = [
+  {id:'walmart',    n:'Walmart',    e:'🛒'},
+  {id:'target',     n:'Target',     e:'🎯'},
+  {id:'bestbuy',    n:'Best Buy',   e:'📺'},
+  {id:'costco',     n:'Costco',     e:'📦'},
+  {id:'kroger',     n:'Kroger',     e:'🥦'},
+  {id:'cvs',        n:'CVS',        e:'💊'},
+  {id:'walgreens',  n:'Walgreens',  e:'🏥'},
+  {id:'homedepot',  n:'Home Depot', e:'🔨'},
+  {id:'lowes',      n:"Lowe's",     e:'🪚'},
+  {id:'amazon',     n:'Amazon',     e:'📬'},
+  {id:'gamestop',   n:'GameStop',   e:'🎮'},
+  {id:'microcenter',n:'Micro Ctr',  e:'💻'},
+];
+
+const IVS = [{l:'5m',v:5},{l:'15m',v:15},{l:'30m',v:30},{l:'1hr',v:60},{l:'3hr',v:180}];
+
+let S = {
+  items: [],
+  stores: ['walmart','target','bestbuy','homedepot','lowes','cvs','walgreens'],
+  interval: 15,
+  opts: {notifyAll:false, skipUnknown:false},
+};
+let history = [];
+let notified = {};
+let running = false, scanTimer = null, cdTimer = null, nextScan = null;
+
+const $ = id => document.getElementById(id);
+
+// ── Persist ────────────────────────────────────────────────
+function save() {
+  localStorage.setItem(SK, JSON.stringify({
+    groqKey:  $('groqKey')?.value || '',
+    tgToken:  $('tgToken')?.value || '',
+    tgChatId: $('tgChatId')?.value || '',
+    ...S,
+    history: history.slice(-100),
+  }));
+}
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SK) || 'null');
+    if (!d) return;
+    if (d.groqKey)  { $('groqKey').value  = d.groqKey;  $('sd0').classList.add('on'); }
+    if (d.tgToken)  { $('tgToken').value  = d.tgToken;  $('sd1').classList.add('on'); }
+    if (d.tgChatId) { $('tgChatId').value = d.tgChatId; $('sd2').classList.add('on'); }
+    if (d.items)    S.items    = d.items;
+    if (d.stores)   S.stores   = d.stores;
+    if (d.interval) S.interval = d.interval;
+    if (d.opts)     S.opts     = {...S.opts, ...d.opts};
+    if (d.history)  history    = d.history;
+  } catch(e) {}
+}
+
+function sf(id, dotId) {
+  save();
+  $(dotId).classList.add('on');
+}
+
+// ── UI builders ────────────────────────────────────────────
+function buildStores() {
+  const g = $('storeGrid'); g.innerHTML='';
+  STORES.forEach(s => {
+    const c = document.createElement('div');
+    c.className = 'chip' + (S.stores.includes(s.id)?' on':'');
+    c.innerHTML = `<span class="ci">${s.e}</span>${s.n}`;
+    c.onclick = () => {
+      const i = S.stores.indexOf(s.id);
+      i>-1 ? S.stores.splice(i,1) : S.stores.push(s.id);
+      c.classList.toggle('on'); save();
+    };
+    $('storeGrid').appendChild(c);
+  });
+}
+
+function buildIV() {
+  const r = $('ivRow'); r.innerHTML='';
+  IVS.forEach(i => {
+    const b = document.createElement('button');
+    b.className='ivb'+(i.v===S.interval?' on':'');
+    b.textContent=i.l;
+    b.onclick=()=>{
+      S.interval=i.v;
+      document.querySelectorAll('.ivb').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); save();
+    };
+    r.appendChild(b);
+  });
+}
+
+function buildToggles() {
+  ['notifyAll','skipUnknown'].forEach(k=>{
+    $('tog-'+k).classList.toggle('on', S.opts[k]);
+  });
+}
+
+function togOpt(k) {
+  S.opts[k]=!S.opts[k];
+  $('tog-'+k).classList.toggle('on',S.opts[k]); save();
+}
+
+// ── Tracked items ──────────────────────────────────────────
+function renderItems() {
+  const list=$('tiList'); list.innerHTML='';
+  if(!S.items.length){
+    list.innerHTML='<div style="font-size:.72rem;color:var(--t3);padding:4px 2px 8px;">No items yet — add one below ↓</div>';
+    return;
+  }
+  S.items.forEach(ti=>{
+    const d=document.createElement('div');
+    d.className='ti-card'+(running?' live':'');
+    d.innerHTML=`<div class="ti-ic">🔎</div><div class="ti-inf"><div class="ti-nm">${ti.item}</div><div class="ti-lc">📍 ${ti.loc}</div></div><button class="ti-rm" onclick="removeItem('${ti.id}')">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+function addItem() {
+  const item=$('newItem').value.trim(), loc=$('newLoc').value.trim();
+  if(!item){$('newItem').focus();return;}
+  if(!loc){$('newLoc').focus();return;}
+  S.items.push({id:Date.now().toString(),item,loc});
+  $('newItem').value=''; $('newLoc').value='';
+  renderItems(); save();
+}
+
+function removeItem(id) {
+  S.items=S.items.filter(t=>t.id!==id);
+  delete notified[id];
+  renderItems(); save();
+}
+
+// ── Tab ────────────────────────────────────────────────────
+function goTab(t) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  $('page-'+t).classList.add('on');
+  $('tab-'+t).classList.add('on');
+  $('scrollEl').scrollTop=0;
+  if(t==='log')     $('n-log').style.display='none';
+  if(t==='results') $('n-results').style.display='none';
+  if(t==='history') renderHistory();
+}
+
+// ── Log ────────────────────────────────────────────────────
+function log(msg,type=''){
+  const b=$('logBox'), s=document.createElement('span');
+  s.className='ll '+type;
+  s.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+  b.appendChild(s); b.scrollTop=b.scrollHeight;
+  if(!$('page-log').classList.contains('on')) $('n-log').style.display='block';
+}
+function clearLog(){$('logBox').innerHTML=''; $('n-log').style.display='none';}
+
+// ── Status ─────────────────────────────────────────────────
+function setSt(txt,state='idle'){
+  $('stText').textContent=txt;
+  $('pulse').className='pulse '+state;
+}
+
+// ── Countdown ──────────────────────────────────────────────
+function startCd(){
+  clearInterval(cdTimer);
+  const d=$('cdEl');
+  cdTimer=setInterval(()=>{
+    if(!nextScan){d.innerHTML='';return;}
+    const rem=Math.max(0,Math.round((nextScan-Date.now())/1000));
+    const m=Math.floor(rem/60),s=rem%60;
+    d.innerHTML=`Next<strong>${m}:${s.toString().padStart(2,'0')}</strong>`;
+    if(rem===0)clearInterval(cdTimer);
+  },1000);
+}
+
+// ── Telegram ───────────────────────────────────────────────
+async function sendTG(token,chatId,msg){
+  const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:chatId,text:msg,parse_mode:'HTML'})
+  });
+  return r.json();
+}
+
+async function testTG(){
+  const t=$('tgToken').value.trim(), c=$('tgChatId').value.trim();
+  if(!t||!c){alert('Enter Telegram Token and Chat ID first.');return;}
+  try{
+    const r=await sendTG(t,c,'🐷 <b>StockHog connected!</b>\n\nAlerts are working. Happy hunting!');
+    alert(r.ok?'✅ Test sent! Check Telegram.':'❌ '+(r.description||'Unknown error'));
+  }catch(e){alert('❌ '+e.message);}
+}
+
+// ── Groq ───────────────────────────────────────────────────
+async function groqScan(key,item,loc,storeIds){
+  const names=storeIds.map(id=>STORES.find(s=>s.id===id)?.n||id);
+  const enc=encodeURIComponent(item);
+
+  const urlMap={
+    Walmart:`https://www.walmart.com/search?q=${enc}`,
+    Target:`https://www.target.com/s?searchTerm=${enc}`,
+    'Best Buy':`https://www.bestbuy.com/site/searchpage.jsp?st=${enc}`,
+    Costco:`https://www.costco.com/CatalogSearch?keyword=${enc}`,
+    Kroger:`https://www.kroger.com/search?query=${enc}`,
+    CVS:`https://www.cvs.com/search?searchTerm=${enc}`,
+    Walgreens:`https://www.walgreens.com/search/results.jsp?Ntt=${enc}`,
+    'Home Depot':`https://www.homedepot.com/s/${enc}`,
+    "Lowe's":`https://www.lowes.com/search?searchTerm=${enc}`,
+    Amazon:`https://www.amazon.com/s?k=${enc}`,
+    GameStop:`https://www.gamestop.com/search#q=${enc}`,
+    'Micro Ctr':`https://www.microcenter.com/search/search_results.aspx?N=4294967288&searchterm=${enc}`,
+  };
+
+  const prompt=`You are a real-time retail stock analyst. Assess whether "${item}" is currently available at stores near ${loc}.
+
+Stores: ${names.join(', ')}
+Today: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+
+Rules:
+- Hot/new releases (flagship GPUs, latest console gen, hyped sneakers, new iPhones): OUT OF STOCK unless released 6+ months ago
+- Common items (household goods, groceries, OTC meds, basic tools): IN STOCK
+- Everything else: use honest judgment, prefer "unknown" over guessing
+- Match item to store type (GPU→Best Buy/Micro Ctr, meds→CVS/Walgreens, tools→Home Depot/Lowe's)
+- "notes" must be ≤12 words, honest, specific
+
+Respond ONLY with raw JSON array, zero markdown:
+[{"store":"EXACT store name from list","status":"in_stock"|"out_of_stock"|"unknown","confidence":"high"|"medium"|"low","notes":"short honest reason","search_url":"url"}]
+
+Use these exact search URLs (fill them in):
+${names.map(n=>`${n}: ${urlMap[n]||`https://www.google.com/search?q=${enc}+${encodeURIComponent(n)}`}`).join('\n')}`;
+
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:MODEL,temperature:0.15,max_tokens:2000,
+      messages:[{role:'user',content:prompt}]})
+  });
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Groq HTTP '+res.status);}
+  const data=await res.json();
+  const txt=data.choices[0].message.content.trim().replace(/```json|```/gi,'').trim();
+  const a=txt.indexOf('['),b=txt.lastIndexOf(']');
+  if(a===-1||b===-1)throw new Error('AI returned invalid format');
+  return JSON.parse(txt.slice(a,b+1));
+}
+
+// ── Render results ─────────────────────────────────────────
+function renderResults(allRes){
+  const area=$('resArea'), meta=$('sMeta');
+  if(!allRes.length){
+    area.innerHTML='<div class="empty"><span class="ei">🤷</span><p>No results.</p></div>';
+    return;
+  }
+  const flat=allRes.flatMap(r=>r.results);
+  const ins=flat.filter(r=>r.status==='in_stock').length;
+  meta.style.display='block';
+  meta.innerHTML=`<span class="sit">${allRes.map(r=>r.item).join(' · ')}</span> · ${flat.length} stores · <b>${ins} in stock</b> · ${new Date().toLocaleTimeString()}`;
+  area.innerHTML='';
+
+  allRes.forEach(({item,loc,results})=>{
+    if(allRes.length>1){
+      const h=document.createElement('div');
+      h.className='rsec-title';
+      h.innerHTML=`🔎 ${item} <span style="color:var(--t3)">near ${loc}</span>`;
+      area.appendChild(h);
+    }
+    const order={in_stock:0,unknown:1,out_of_stock:2};
+    const sorted=[...results].sort((a,b)=>(order[a.status]??2)-(order[b.status]??2));
+    const ins2=sorted.filter(r=>r.status==='in_stock');
+    const unk=sorted.filter(r=>r.status==='unknown');
+    const out=sorted.filter(r=>r.status==='out_of_stock');
+
+    if(ins2.length){
+      const h=document.createElement('div');h.className='rsec-title';
+      h.innerHTML=`✅ In Stock <span class="rsc">${ins2.length}</span>`;
+      area.appendChild(h); ins2.forEach((r,i)=>area.appendChild(mkCard(r,i)));
+    }
+    if(!S.opts.skipUnknown&&unk.length){
+      const h=document.createElement('div');h.className='rsec-title';
+      h.innerHTML=`❓ Unknown <span class="rsc">${unk.length}</span>`;
+      area.appendChild(h); unk.forEach((r,i)=>area.appendChild(mkCard(r,i)));
+    }
+    if(out.length){
+      const h=document.createElement('div');h.className='rsec-title';
+      h.innerHTML=`❌ Out of Stock <span class="rsc">${out.length}</span>`;
+      area.appendChild(h); out.forEach((r,i)=>area.appendChild(mkCard(r,i)));
+    }
+  });
+}
+
+function mkCard(r,i){
+  const dc=r.status==='in_stock'?'in':r.status==='out_of_stock'?'out':'unk';
+  const bl=r.status==='in_stock'?'✓ In Stock':r.status==='out_of_stock'?'✗ Out':'? Unknown';
+  const cc='rcard'+(r.status==='in_stock'?' ins':'');
+  const confColor=r.confidence==='high'?'var(--green)':r.confidence==='medium'?'var(--gold)':'var(--t3)';
+  const card=document.createElement('div');
+  card.className=cc; card.style.animationDelay=(i*.04)+'s';
+  card.innerHTML=`<div class="rdot ${dc}"></div><div class="rb"><div class="rn">${r.store}</div><div class="rnt">${r.notes||'—'}${r.search_url?` · <a href="${r.search_url}" target="_blank">Search →</a>`:''}</div><div class="rcf" style="color:${confColor}">Confidence: ${r.confidence||'?'}</div></div><div class="rbdg ${dc}">${bl}</div>`;
+  return card;
+}
+
+function showShimmers(n){
+  const a=$('resArea'); a.innerHTML='';
+  for(let i=0;i<n;i++){const d=document.createElement('div');d.className='shim';d.style.animationDelay=(i*.08)+'s';a.appendChild(d);}
+}
+
+// ── Alerts ─────────────────────────────────────────────────
+async function sendAlerts(ti,results,tok,cid){
+  if(!notified[ti.id])notified[ti.id]=new Set();
+  const newIn=results.filter(r=>r.status==='in_stock'&&(S.opts.notifyAll||!notified[ti.id].has(r.store)));
+  if(!newIn.length)return;
+  const lines=newIn.map(r=>`  • <b>${r.store}</b> — ${r.notes||'May be in stock'}${r.search_url?`\n    <a href="${r.search_url}">Check here →</a>`:''}`).join('\n');
+  const msg=`🐷 <b>StockHog Alert!</b>\n\n<b>${ti.item}</b> spotted near <b>${ti.loc}</b>!\n\n${lines}\n\n<i>Verify on store site before heading out.</i>`;
+  try{
+    await sendTG(tok,cid,msg);
+    newIn.forEach(r=>notified[ti.id].add(r.store));
+    log(`📨 Telegram → ${newIn.length} store(s) for "${ti.item}"`, 'warn');
+  }catch(e){log('Telegram failed: '+e.message,'err');}
+}
+
+// ── History ────────────────────────────────────────────────
+function addHist(item,loc,results){
+  history.unshift({ts:Date.now(),item,loc,results,inStock:results.filter(r=>r.status==='in_stock').length,total:results.length});
+  if(history.length>100)history.length=100;
+  save();
+}
+
+function renderHistory(){
+  const a=$('histArea');
+  if(!history.length){
+    a.innerHTML='<div class="empty"><span class="ei">📜</span><p>Scan history will appear here after your first hunt.</p></div>';
+    return;
+  }
+  a.innerHTML='';
+  history.forEach(h=>{
+    const d=document.createElement('div'); d.className='hi';
+    const ts=new Date(h.ts);
+    const tstr=ts.toLocaleDateString()+' '+ts.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    d.innerHTML=`<div class="hi-top"><div class="hi-nm">🔎 ${h.item}</div><div class="hi-ts">${tstr}</div></div><div class="hi-bot"><div class="hi-lc">📍 ${h.loc}</div><div class="hi-st ${h.inStock>0?'y':'n'}">${h.inStock>0?`✓ ${h.inStock} in stock`:'✗ Not found'}</div></div>`;
+    d.onclick=()=>{
+      renderResults([{item:h.item,loc:h.loc,results:h.results}]);
+      $('sMeta').style.display='block';
+      $('sMeta').innerHTML=`History: <span class="sit">${h.item}</span> · ${new Date(h.ts).toLocaleString()}`;
+      goTab('results');
+    };
+    a.appendChild(d);
+  });
+}
+
+// ── Scan ───────────────────────────────────────────────────
+async function doScan(){
+  const key=$('groqKey').value.trim(), tok=$('tgToken').value.trim(), cid=$('tgChatId').value.trim();
+  if(!key){log('No Groq key.','err');setSt('No Groq key set','error');return;}
+  if(!S.items.length){log('No items to track.','err');return;}
+
+  $('sbar').style.display='flex';
+  setSt(`Hunting ${S.items.length} item(s)...`,'scanning');
+  showShimmers(S.stores.length||4);
+  log(`Scanning ${S.items.length} item(s) across ${S.stores.length} stores...`,'info');
+
+  const allRes=[]; let anyIn=false;
+  for(const ti of S.items){
+    log(`Checking "${ti.item}" near ${ti.loc}...`,'info');
+    try{
+      const results=await groqScan(key,ti.item,ti.loc,S.stores);
+      allRes.push({item:ti.item,loc:ti.loc,results});
+      addHist(ti.item,ti.loc,results);
+      const ins=results.filter(r=>r.status==='in_stock');
+      log(`"${ti.item}" → ${ins.length}/${results.length} in stock`, ins.length?'ok':'');
+      if(ins.length&&tok&&cid){await sendAlerts(ti,results,tok,cid);anyIn=true;}
+      else if(ins.length)anyIn=true;
+    }catch(e){
+      log(`Error: "${ti.item}": ${e.message}`,'err');
+      allRes.push({item:ti.item,loc:ti.loc,results:[]});
+    }
+  }
+
+  renderResults(allRes);
+  if(!$('page-results').classList.contains('on'))$('n-results').style.display='block';
+
+  if(anyIn)setSt(`🎉 Found stock! ${tok?'Telegram sent.':'(No TG configured)'}`, 'found');
+  else setSt(`Nothing yet. Rechecking in ${S.interval}m`, 'idle');
+}
+
+// ── Loop ───────────────────────────────────────────────────
+async function scanNow(){
+  if(!running)return;
+  clearTimeout(scanTimer); clearInterval(cdTimer);
+  nextScan=null; $('cdEl').innerHTML='';
+  await doScan(); scheduleNext();
+}
+
+function scheduleNext(){
+  nextScan=Date.now()+S.interval*60*1000;
+  startCd();
+  scanTimer=setTimeout(async()=>{await doScan();scheduleNext();},S.interval*60*1000);
+}
+
+// ── Start / Stop ───────────────────────────────────────────
+async function startTracking(){
+  const key=$('groqKey').value.trim();
+  if(!key){alert('Enter your Groq API key first.');return;}
+  if(!S.items.length){alert('Add at least one item to track.');return;}
+  if(!S.stores.length){alert('Select at least one store.');return;}
+
+  running=true; notified={};
+  $('startBtn').disabled=true;
+  $('stopBtn').style.display='block';
+  $('livePill').style.display='flex';
+  $('scanBtn').style.display='block';
+  renderItems();
+
+  log(`=== StockHog started · ${S.items.length} item(s) · ${S.stores.length} stores · every ${S.interval}m ===`,'warn');
+  goTab('results');
+  await doScan();
+  scheduleNext();
+}
+
+function stopTracking(){
+  running=false;
+  clearTimeout(scanTimer); clearInterval(cdTimer);
+  nextScan=null;
+  $('startBtn').disabled=false;
+  $('stopBtn').style.display='none';
+  $('livePill').style.display='none';
+  $('scanBtn').style.display='none';
+  $('cdEl').innerHTML='';
+  setSt('Tracking stopped.','idle');
+  log('=== Tracking stopped ===','warn');
+  renderItems();
+}
+
+// ── Init ───────────────────────────────────────────────────
+load();
+buildStores();
+buildIV();
+buildToggles();
+renderItems();
+
+$('newItem').addEventListener('keydown',e=>{if(e.key==='Enter')$('newLoc').focus();});
+$('newLoc').addEventListener('keydown',e=>{if(e.key==='Enter')addItem();});
+</script>
+
+</body>
+</html>
